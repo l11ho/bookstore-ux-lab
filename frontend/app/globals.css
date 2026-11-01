@@ -1,0 +1,180 @@
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f4f6fa;
+  font-family: Arial, sans-serif;
+  color: #1e293b;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0;
+}
+
+.header h1 {
+  color: #2563eb;
+}
+
+.hero {
+  background: #2563eb;
+  color: white;
+  padding: 55px 20px;
+  border-radius: 16px;
+  text-align: center;
+  margin: 20px 0 30px;
+}
+
+.hero h2 {
+  font-size: 32px;
+}
+
+
+.search-section {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.search-section input {
+  flex: 1;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.search-section button {
+  padding: 14px 24px;
+}
+
+@media (max-width: 600px) {
+  .search-section {
+    flex-direction: column;
+  }
+}
+
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit, minmax(220px, 1fr)
+  );
+  gap: 24px;
+}
+
+.book-card {
+  background: white;
+  padding: 24px;
+  border-radius: 14px;
+  box-shadow: 0 5px 20px #0000000d;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.book-icon {
+  font-size: 55px;
+  text-align: center;
+}
+
+.book-card h3 {
+  margin: 5px 0;
+}
+
+.book-card p {
+  color: #64748b;
+}
+
+.book-card strong {
+  color: #2563eb;
+  font-size: 22px;
+}
+
+button {
+  padding: 13px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+.book-card button {
+  margin-top: auto;
+}
+
+.details {
+  background: white;
+  margin-top: 28px;
+  padding: 24px;
+  border-radius: 14px;
+}
+
+@media (max-width: 600px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .hero h2 {
+    font-size: 24px;
+  }
+}
+
+
+.consent-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 9999;
+  max-width: 450px;
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px #00000025;
+  border: 1px solid #e2e8f0;
+}
+
+.consent-banner h3 {
+  margin-top: 0;
+}
+
+.consent-banner p {
+  line-height: 1.6;
+  color: #475569;
+}
+
+.consent-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.consent-actions button:last-child {
+  background: #64748b;
+}
+
+.consent-settings {
+  position: fixed;
+  bottom: 12px;
+  right: 12px;
+  z-index: 9999;
+  font-size: 12px;
+  padding: 9px 12px;
+}
