@@ -3,6 +3,12 @@
 
 import { useEffect, useState } from "react";
 
+
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://127.0.0.1:8000";
+
+
 function trackEvent(name, params = {}) {
   if (
     typeof window !== "undefined" &&
@@ -20,7 +26,7 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/books")
+    fetch(`${API_BASE}/api/books`)
       .then((response) => {
         if (!response.ok) throw new Error("API error");
         return response.json();
