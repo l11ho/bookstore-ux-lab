@@ -23,10 +23,10 @@ app.add_middleware(
 
 
 books = [
-    {"id": 1, "title": "Clean Code", "author": "Robert C. Martin", "price": 25},
-    {"id": 2, "title": "Atomic Habits", "author": "James Clear", "price": 20},
-    {"id": 3, "title": "Deep Work", "author": "Cal Newport", "price": 18},
-    {"id": 4, "title": "The Pragmatic Programmer", "author": "Andrew Hunt", "price": 30},
+    {"id": 1, "title": "Clean Code", "author": "Robert C. Martin", "price": 1890},
+    {"id": 2, "title": "Atomic Habits", "author": "James Clear", "price": 1490},
+    {"id": 3, "title": "Deep Work", "author": "Cal Newport", "price": 1590},
+    {"id": 4, "title": "The Pragmatic Programmer", "author": "Andrew Hunt", "price": 2290},
 ]
 
 @app.get("/api/books")
