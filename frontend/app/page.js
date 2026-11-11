@@ -213,9 +213,14 @@ export default function Home() {
 
   function chooseCategory(category) {
     setActiveCategory(category);
+    setSearch("");
     trackEvent("select_content", {
       content_type: "book_category",
       item_id: category,
+    });
+    document.getElementById("catalog")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
     });
   }
 
