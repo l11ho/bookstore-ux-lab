@@ -1,10 +1,9 @@
-
 import "./globals.css";
 import AnalyticsConsent from "./components/AnalyticsConsent";
 
 export const metadata = {
-  title: "BookStore UX Lab",
-  description: "Исследование пользовательского поведения",
+  title: "BookStore — The Reading Room",
+  description: "Откройте книги для новых идей, знаний и вдохновения. BookStore UX Lab.",
 };
 
 export default function RootLayout({ children }) {
