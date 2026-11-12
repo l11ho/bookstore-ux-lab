@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import CheckoutModal from "./components/CheckoutModal";
 import OrdersModal from "./components/OrdersModal";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-
 const FALLBACK_BOOKS = [
   { id: 1, title: "Чистый код", author: "Robert C. Martin", price: 1890 },
   { id: 2, title: "Атомные привычки", author: "James Clear", price: 1490 },
