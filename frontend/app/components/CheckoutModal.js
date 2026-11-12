@@ -19,7 +19,7 @@ function formatUsd(cents) {
   }).format((Number(cents) || 0) / 100);
 }
 
-export default function CheckoutModal({ cartItems, accountEmail, onClose, onOrderPlaced }) {
+export default function CheckoutModal({ cartItems, accountEmail, onClose, onOrderPlaced, onViewOrders }) {
   const [form, setForm] = useState({
     fullName: "",
     email: accountEmail || "",
@@ -113,7 +113,10 @@ export default function CheckoutModal({ cartItems, accountEmail, onClose, onOrde
               <span>Order total</span>
               <strong>{formatUsd(order.total_cents ?? totalCents)}</strong>
             </div>
-            <button className={styles.primary} type="button" onClick={onClose}>Continue shopping</button>
+            <div className={styles.actions}>
+              <button className={styles.secondary} type="button" onClick={onClose}>Continue shopping</button>
+              <button className={styles.primary} type="button" onClick={onViewOrders}>View my orders</button>
+            </div>
           </div>
         ) : (
           <form className={styles.body} onSubmit={submitOrder}>
