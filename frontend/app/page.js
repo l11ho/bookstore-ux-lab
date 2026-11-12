@@ -124,6 +124,7 @@ export default function Home() {
   const [favoritesReady, setFavoritesReady] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
   const [account, setAccount] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [authConfigured, setAuthConfigured] = useState(true);
   const [authOpen, setAuthOpen] = useState(false);
   const [authMode, setAuthMode] = useState("signin");
@@ -183,6 +184,7 @@ export default function Home() {
         if (cancelled) return;
         setAuthConfigured(Boolean(data.configured));
         setAccount(data.user || null);
+        setIsAdmin(Boolean(data.isAdmin));
         if (!data.user) return;
 
         const guestIds = (() => {
@@ -422,7 +424,12 @@ export default function Home() {
 
       if (data.user) {
         setAccount(data.user);
+        setIsAdmin(Boolean(data.isAdmin));
         setAuthOpen(false);
+        if (data.isAdmin) {
+          window.location.assign("/admin");
+          return;
+        }
         setAuthPassword("");
         const saved = await fetch("/api/favorites", { cache: "no-store" });
         const savedData = await saved.json().catch(() => ({}));
@@ -459,6 +466,7 @@ export default function Home() {
       });
     } finally {
       setAccount(null);
+      setIsAdmin(false);
       setFavorites([]);
       setFavoritesOpen(false);
       setOrdersOpen(false);
@@ -511,6 +519,7 @@ export default function Home() {
           {account ? (
             <div className="account-menu">
               <span className="account-email">{account.email}</span>
+              {isAdmin && <a className="account-button" href="/admin">Админ-панель</a>}
               <button className="account-button" type="button" onClick={() => setOrdersOpen(true)}>Мои заказы</button>
               <button className="account-button" type="button" onClick={signOut}>Выйти</button>
             </div>
