@@ -10,7 +10,6 @@ import {
   setSessionCookies,
 } from "../../lib/supabaseServer";
 
-export const dynamic = "force-dynamic";
 
 function reply(data, status = 200) {
   return NextResponse.json(data, {
