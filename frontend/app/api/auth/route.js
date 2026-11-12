@@ -8,6 +8,7 @@ import {
   isSameOriginRequest,
   publicUser,
   setSessionCookies,
+  isBookstoreAdmin,
 } from "../../lib/supabaseServer";
 
 
@@ -21,7 +22,8 @@ function reply(data, status = 200) {
 export async function GET() {
   try {
     const session = await getSession();
-    return reply({ configured: session.configured, user: publicUser(session.user) });
+    const isAdmin = session.user ? await isBookstoreAdmin(session.config, session.token) : false;
+    return reply({ configured: session.configured, user: publicUser(session.user), isAdmin });
   } catch {
     return reply({ configured: !!getSupabaseConfig(), user: null, error: "Не удалось проверить сессию." }, 503);
   }
@@ -70,7 +72,8 @@ export async function POST(request) {
 
     if (result.data.access_token && result.data.refresh_token) {
       setSessionCookies(await cookies(), result.data);
-      return reply({ success: true, user: publicUser(result.data.user), needsConfirmation: false });
+      const isAdmin = await isBookstoreAdmin(config, result.data.access_token);
+      return reply({ success: true, user: publicUser(result.data.user), isAdmin, needsConfirmation: false });
     }
 
     return reply({
