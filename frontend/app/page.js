@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CheckoutModal from "./components/CheckoutModal";
+import OrdersModal from "./components/OrdersModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -118,6 +119,7 @@ export default function Home() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [ordersOpen, setOrdersOpen] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [favoritesReady, setFavoritesReady] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
@@ -459,6 +461,7 @@ export default function Home() {
       setAccount(null);
       setFavorites([]);
       setFavoritesOpen(false);
+      setOrdersOpen(false);
       setFavoriteNotice("");
       localStorage.removeItem("bookstore_favorites_v1");
     }
@@ -508,6 +511,7 @@ export default function Home() {
           {account ? (
             <div className="account-menu">
               <span className="account-email">{account.email}</span>
+              <button className="account-button" type="button" onClick={() => setOrdersOpen(true)}>Мои заказы</button>
               <button className="account-button" type="button" onClick={signOut}>Выйти</button>
             </div>
           ) : (
@@ -972,11 +976,25 @@ export default function Home() {
         </div>
       )}
 
+      {ordersOpen && account && (
+        <OrdersModal
+          onClose={() => setOrdersOpen(false)}
+          onBrowse={() => {
+            setOrdersOpen(false);
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      )}
+
       {checkoutOpen && (
         <CheckoutModal
           cartItems={cartItems}
           accountEmail={account?.email || ""}
           onClose={() => setCheckoutOpen(false)}
+          onViewOrders={() => {
+            setCheckoutOpen(false);
+            setOrdersOpen(true);
+          }}
           onOrderPlaced={() => {
             setCartItems([]);
             trackEvent("purchase", {
