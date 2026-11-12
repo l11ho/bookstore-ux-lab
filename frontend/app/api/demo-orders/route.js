@@ -33,7 +33,7 @@ export async function POST(request) {
     quantity: Number(item?.quantity),
   }));
   if (items.some((item) =>
-    !Number.isInteger(item.id) || item.id < 1 || item.id > 22 ||
+    !Number.isInteger(item.id) || item.id < 1 || item.id > 2147483647 ||
     !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10
   )) {
     return reply({ error: "One or more cart items are invalid." }, 400);

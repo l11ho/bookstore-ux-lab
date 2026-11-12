@@ -1,41 +1,27 @@
 # BookStore Admin setup
 
-This adds a protected Admin role and an initial order-management dashboard.
+## Existing Admin access
 
-## 1. Apply the migration
+The protected Admin role is managed by \`supabase/migrations/202611130001_create_bookstore_admins.sql\`. The Admin account must already be present in \`public.bookstore_admins\`. Protected API requests verify the role through Supabase; do not expose a service-role key in Vercel or browser code.
+
+## Enable the full management suite
 
 1. Open the BookStore project in Supabase.
-2. Go to **SQL Editor** and choose **New query**.
-3. Copy and run the complete file:
-   \`supabase/migrations/202611130001_create_bookstore_admins.sql\`
+2. Go to **SQL Editor → New query**.
+3. Copy and run the complete file \`supabase/migrations/202611140001_admin_management_suite.sql\`.
+4. Wait for the Vercel preview deployment from \`feat/admin-management-suite\`.
+5. Test the preview. Merge its pull request into \`main\` after review.
 
-The migration creates a private admin-role table and server-checked functions. Normal signed-in users cannot read or change the role table and cannot grant themselves Admin access.
+## Dashboard sections
 
-## 2. Grant Admin to the intended account
+- Overview: order totals, demo revenue, inventory alerts, monthly revenue and best sellers.
+- Books: add, edit, search and archive books; update price, stock, categories, description, cover and homepage collections.
+- Orders: search orders, inspect shipping details and line items, update order status.
+- Customers: contact details from saved demo shipping addresses, lifetime demo spend and order history.
+- Analytics: monthly demo revenue, order status distribution and best-selling books.
 
-After the account has been created in **Authentication → Users**, run this separate one-time statement in SQL Editor, replacing the placeholder with the Admin account's Auth User ID:
+The migration seeds the existing 22 catalog books without overwriting existing rows. Archived books are hidden from the storefront but remain in the database for historic order references. Checkout reads current prices from Supabase and decrements stock for in-stock books. Preorders do not decrement stock.
 
-\`\`\`sql
-insert into public.bookstore_admins (user_id)
-values ('PASTE_THE_ADMIN_AUTH_USER_ID_HERE')
-on conflict (user_id) do nothing;
-\`\`\`
+## Important
 
-Do not put this UUID in browser code, public environment variables, or a client-side form. Only a trusted project owner should run this statement.
-
-## 3. Deploy
-
-Merge the preview branch into \`main\` after reviewing it in Vercel. No new Vercel environment variable or service-role key is required.
-
-## 4. Use the dashboard
-
-Sign in to BookStore with the Admin account. The sign-in flow will show the Admin link and send that account to \`/admin\`. The dashboard currently provides demo-order totals, unique customer count, the latest 100 orders, and order-status management.
-
-Revenue is labelled as demo revenue because the checkout does not process real payments. The first release does not provide customer account editing or book-catalog CRUD yet.
-
-## 5. Security notes
-
-- Admin authorization is checked by Supabase RPC using the signed-in user's access token.
-- The admin table has RLS enabled and no client table permissions.
-- Admin-only RPCs check the role again inside the database before returning data or changing an order.
-- Never expose a Supabase service-role key in the browser.
+Checkout remains demo-only. No card or PayPal charge is made. Customer details in Admin are derived from order shipping information; the dashboard does not expose or edit Supabase Auth passwords or credentials.

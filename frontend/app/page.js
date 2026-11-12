@@ -98,11 +98,18 @@ function formatPrice(price) {
 
 function BookCover({ book, compact = false }) {
   const meta = BOOK_META[book.id] || {};
+  if (book.coverUrl) {
+    return (
+      <div className={"book-cover cover-image" + (compact ? " book-cover-compact" : "")}>
+        <img src={book.coverUrl} alt={"Обложка книги " + book.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+    );
+  }
   return (
-    <div className={"book-cover cover-" + (meta.coverStyle || "default") + (compact ? " book-cover-compact" : "")}>
+    <div className={"book-cover cover-" + (book.coverStyle || meta.coverStyle || "default") + (compact ? " book-cover-compact" : "")}>
       <span className="cover-brand">BOOKSTORE EDITIONS</span>
       <span className="cover-title">{book.title}</span>
-      <span className="cover-note">{meta.coverNote || "A book to keep close"}</span>
+      <span className="cover-note">{book.coverNote || meta.coverNote || "A book to keep close"}</span>
       <span className="cover-author">{book.author}</span>
     </div>
   );
@@ -139,7 +146,7 @@ export default function Home() {
   useEffect(() => {
     let cancelled = false;
 
-    fetch(API_BASE + "/api/books")
+    fetch("/api/books")
       .then((response) => {
         if (!response.ok) throw new Error("API request failed");
         return response.json();
@@ -241,8 +248,14 @@ export default function Home() {
         };
 
         return {
-          ...book,
           ...meta,
+          ...book,
+          category: book.category || meta.category,
+          description: book.description || meta.description,
+          coverNote: book.coverNote || meta.coverNote,
+          coverStyle: book.coverStyle || meta.coverStyle,
+          sections: Array.isArray(book.sections) ? book.sections : (meta.sections || []),
+          comingSoon: Boolean(book.comingSoon ?? meta.comingSoon),
           storePrice: meta.storePrice || Number(book.price) + 150,
           publisher: meta.publisher || "BookStore Editions",
           year: meta.year || 2025,
