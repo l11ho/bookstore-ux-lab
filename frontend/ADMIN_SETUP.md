@@ -13,7 +13,7 @@ The migration creates a private admin-role table and server-checked functions. N
 
 ## 2. Grant Admin to the intended account
 
-After the account has been created in **Authentication → Users**, run this separate one-time statement in SQL Editor, replacing the UUID with that account's Auth User ID:
+After the account has been created in **Authentication → Users**, run this separate one-time statement in SQL Editor, replacing the placeholder with the Admin account's Auth User ID:
 
 \`\`\`sql
 insert into public.bookstore_admins (user_id)
