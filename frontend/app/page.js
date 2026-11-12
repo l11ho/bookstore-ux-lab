@@ -169,7 +169,9 @@ export default function Home() {
     try {
       const stored = JSON.parse(localStorage.getItem("bookstore_favorites_v1") || "[]");
       if (Array.isArray(stored)) setFavorites(stored.map(Number).filter(Number.isInteger));
-    } catch {}
+    } catch {
+      // Ignore malformed local favorites and continue with an empty list.
+    }
     setFavoritesReady(true);
 
     fetch("/api/auth", { cache: "no-store" })
