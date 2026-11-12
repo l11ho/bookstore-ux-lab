@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import CheckoutModal from "./components/CheckoutModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
@@ -88,11 +89,10 @@ function trackEvent(name, params = {}) {
 }
 
 function formatPrice(price) {
-  return new Intl.NumberFormat("ru-RU", {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "RUB",
-    maximumFractionDigits: 0,
-  }).format(Number(price) || 0);
+    currency: "USD",
+  }).format((Number(price) || 0) / 100);
 }
 
 function BookCover({ book, compact = false }) {
@@ -117,6 +117,7 @@ export default function Home() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [favorites, setFavorites] = useState([]);
   const [favoritesReady, setFavoritesReady] = useState(false);
   const [favoritesOpen, setFavoritesOpen] = useState(false);
@@ -307,12 +308,12 @@ export default function Home() {
     setDetailQuantity(1);
     trackEvent("select_item", {
       item_list_name: "book_catalog",
-      currency: "RUB",
+      currency: "USD",
       items: [
         {
           item_id: String(book.id),
           item_name: book.title,
-          price: Number(book.price),
+          price: Number(book.price) / 100,
         },
       ],
     });
@@ -331,17 +332,30 @@ export default function Home() {
     });
 
     trackEvent("add_to_cart", {
-      currency: "RUB",
-      value: Number(book.price) * safeQuantity,
+      currency: "USD",
+      value: (Number(book.price) / 100) * safeQuantity,
       items: [
         {
           item_id: String(book.id),
           item_name: book.title,
-          price: Number(book.price),
+          price: Number(book.price) / 100,
           quantity: safeQuantity,
         },
       ],
     });
+  }
+
+  function startCheckout() {
+    if (!cartItems.length) return;
+    setCartOpen(false);
+    if (!account) {
+      setAuthMode("signin");
+      setAuthError("Войдите в аккаунт, чтобы сохранить заказ в истории покупок.");
+      setAuthMessage("");
+      setAuthOpen(true);
+      return;
+    }
+    setCheckoutOpen(true);
   }
 
   function changeQuantity(bookId, amount) {
@@ -958,6 +972,21 @@ export default function Home() {
         </div>
       )}
 
+      {checkoutOpen && (
+        <CheckoutModal
+          cartItems={cartItems}
+          accountEmail={account?.email || ""}
+          onClose={() => setCheckoutOpen(false)}
+          onOrderPlaced={() => {
+            setCartItems([]);
+            trackEvent("purchase", {
+              currency: "USD",
+              value: cartTotal / 100,
+            });
+          }}
+        />
+      )}
+
       {cartOpen && (
         <div className="drawer-backdrop" onClick={() => setCartOpen(false)}>
           <aside
@@ -996,8 +1025,8 @@ export default function Home() {
                 <div className="cart-summary">
                   <div><span>Итого</span><strong>{formatPrice(cartTotal)}</strong></div>
                   <p>Демонстрационная корзина для UX-исследования.</p>
-                  <button className="button-primary drawer-continue" type="button" onClick={() => setCartOpen(false)}>
-                    Продолжить покупки <span>→</span>
+                  <button className="button-primary drawer-continue" type="button" onClick={startCheckout}>
+                    Перейти к оформлению <span>→</span>
                   </button>
                 </div>
               </>
