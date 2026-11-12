@@ -34,7 +34,7 @@
 }
 .header h2 {
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: clamp(30px, 4vw, 42px);
   font-weight: 500;
   line-height: 1.1;
@@ -66,7 +66,7 @@
 .section + .section { margin-top: 27px; }
 .section h3, .summary h3 {
   margin: 0 0 17px;
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 21px;
   font-weight: 500;
 }
@@ -206,7 +206,7 @@
   color: #1d3033;
   font-size: 13px;
 }
-.grandTotal strong { font-family: Georgia, serif; font-size: 23px; }
+.grandTotal strong { font-family: var(--serif); font-size: 23px; }
 .shippingNote { margin: 16px 0 0; color: #858c87; font-size: 10px; line-height: 1.6; }
 .success {
   max-width: 520px;
@@ -225,7 +225,7 @@
   color: #3d7952;
   font-size: 30px;
 }
-.success h3 { margin: 0; font-family: Georgia, serif; font-size: 30px; font-weight: 500; }
+.success h3 { margin: 0; font-family: var(--serif); font-size: 30px; font-weight: 500; }
 .successText { margin: 12px auto 22px; color: #7c8581; font-size: 13px; line-height: 1.6; }
 .orderNumber, .successTotal {
   display: flex;
