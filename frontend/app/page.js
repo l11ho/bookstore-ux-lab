@@ -425,7 +425,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: authMode,
+          action: authMode === "forgot" ? "recover" : authMode,
           email: authEmail,
           password: authMode === "forgot" ? undefined : authPassword,
         }),
