@@ -118,6 +118,18 @@ export default function Home() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [favorites, setFavorites] = useState([]);
+  const [favoritesReady, setFavoritesReady] = useState(false);
+  const [favoritesOpen, setFavoritesOpen] = useState(false);
+  const [account, setAccount] = useState(null);
+  const [authConfigured, setAuthConfigured] = useState(true);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState("signin");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [favoriteNotice, setFavoriteNotice] = useState("");
   const [detailQuantity, setDetailQuantity] = useState(1);
 
   useEffect(() => {
@@ -151,6 +163,64 @@ export default function Home() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const stored = JSON.parse(localStorage.getItem("bookstore_favorites_v1") || "[]");
+      if (Array.isArray(stored)) setFavorites(stored.map(Number).filter(Number.isInteger));
+    } catch {}
+    setFavoritesReady(true);
+
+    fetch("/api/auth", { cache: "no-store" })
+      .then((response) => response.json())
+      .then(async (data) => {
+        if (cancelled) return;
+        setAuthConfigured(Boolean(data.configured));
+        setAccount(data.user || null);
+        if (!data.user) return;
+
+        const guestIds = (() => {
+          try {
+            const stored = JSON.parse(localStorage.getItem("bookstore_favorites_v1") || "[]");
+            return Array.isArray(stored) ? stored.map(Number).filter(Number.isInteger) : [];
+          } catch { return []; }
+        })();
+
+        const result = await fetch("/api/favorites", { cache: "no-store" });
+        const remote = await result.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!result.ok) {
+          setFavoriteNotice(remote.error || "Не удалось загрузить избранное.");
+          return;
+        }
+
+        const remoteIds = Array.isArray(remote.favoriteIds) ? remote.favoriteIds : [];
+        const merged = [...new Set([...remoteIds, ...guestIds])];
+        setFavorites(merged);
+        if (guestIds.length) {
+          await Promise.all(guestIds.map((bookId) =>
+            fetch("/api/favorites", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ bookId, saved: true }),
+            })
+          ));
+          localStorage.removeItem("bookstore_favorites_v1");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAuthConfigured(false);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (favoritesReady && !account) {
+      localStorage.setItem("bookstore_favorites_v1", JSON.stringify(favorites));
+    }
+  }, [favorites, favoritesReady, account]);
 
   const enrichedBooks = useMemo(
     () =>
@@ -284,15 +354,98 @@ export default function Home() {
     );
   }
 
-  function toggleFavorite(book) {
+  async function toggleFavorite(book) {
     const isSaved = favorites.includes(book.id);
-    setFavorites((current) =>
-      isSaved ? current.filter((id) => id !== book.id) : [...current, book.id]
-    );
+    const next = isSaved
+      ? favorites.filter((id) => id !== book.id)
+      : [...favorites, book.id];
+    setFavorites(next);
+    setFavoriteNotice("");
+
+    if (account) {
+      try {
+        const result = await fetch("/api/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookId: book.id, saved: !isSaved }),
+        });
+        const data = await result.json().catch(() => ({}));
+        if (!result.ok) {
+          setFavoriteNotice(data.error || "Не удалось синхронизировать избранное.");
+        }
+      } catch {
+        setFavoriteNotice("Нет соединения. Изменение пока сохранено только на этой странице.");
+      }
+    }
+
     trackEvent(isSaved ? "remove_from_wishlist" : "add_to_wishlist", {
       item_id: String(book.id),
       item_name: book.title,
     });
+  }
+
+  async function submitAuth(event) {
+    event.preventDefault();
+    setAuthLoading(true);
+    setAuthError("");
+    setAuthMessage("");
+    try {
+      const result = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: authMode,
+          email: authEmail,
+          password: authPassword,
+        }),
+      });
+      const data = await result.json().catch(() => ({}));
+      if (!result.ok) throw new Error(data.error || "Не удалось выполнить запрос.");
+
+      if (data.user) {
+        setAccount(data.user);
+        setAuthOpen(false);
+        setAuthPassword("");
+        const saved = await fetch("/api/favorites", { cache: "no-store" });
+        const savedData = await saved.json().catch(() => ({}));
+        if (saved.ok) {
+          const remoteIds = Array.isArray(savedData.favoriteIds) ? savedData.favoriteIds : [];
+          const merged = [...new Set([...remoteIds, ...favorites])];
+          setFavorites(merged);
+          await Promise.all(favorites.map((bookId) =>
+            fetch("/api/favorites", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ bookId, saved: true }),
+            })
+          ));
+          localStorage.removeItem("bookstore_favorites_v1");
+        }
+      } else {
+        setAuthMessage(data.message || "Проверьте почту для подтверждения регистрации.");
+        setAuthMode("signin");
+      }
+    } catch (error) {
+      setAuthError(error.message || "Не удалось выполнить запрос.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function signOut() {
+    try {
+      await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "signout" }),
+      });
+    } finally {
+      setAccount(null);
+      setFavorites([]);
+      setFavoritesOpen(false);
+      setFavoriteNotice("");
+      localStorage.removeItem("bookstore_favorites_v1");
+    }
   }
 
   return (
@@ -327,6 +480,25 @@ export default function Home() {
           >
             <span>⌕</span>
           </button>
+          <button
+            className="header-favorites-button"
+            type="button"
+            onClick={() => setFavoritesOpen(true)}
+            aria-label={"Избранное, книг: " + favorites.length}
+          >
+            <span>♡</span><span className="header-favorites-label">Избранное</span>
+            <span className="header-favorites-count">{favorites.length}</span>
+          </button>
+          {account ? (
+            <div className="account-menu">
+              <span className="account-email">{account.email}</span>
+              <button className="account-button" type="button" onClick={signOut}>Выйти</button>
+            </div>
+          ) : (
+            <button className="account-button" type="button" onClick={() => {
+              setAuthMode("signin"); setAuthError(""); setAuthMessage(""); setAuthOpen(true);
+            }}>Войти</button>
+          )}
           <button
             className="cart-button"
             type="button"
@@ -640,6 +812,59 @@ export default function Home() {
         </div>
         <span className="copyright">© 2026 BookStore UX Lab</span>
       </footer>
+
+      {favoritesOpen && (
+        <div className="modal-backdrop" onClick={() => setFavoritesOpen(false)}>
+          <section className="account-modal favorites-modal" role="dialog" aria-modal="true" aria-labelledby="favorites-title" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setFavoritesOpen(false)} aria-label="Закрыть">×</button>
+            <p className="eyebrow">ВАША КОЛЛЕКЦИЯ</p>
+            <h2 id="favorites-title">Избранное</h2>
+            <p className="account-intro">{account ? "Ваш список синхронизируется с аккаунтом." : "Сохранённые книги останутся в этом браузере. Войдите, чтобы синхронизировать их между устройствами."}</p>
+            {favoriteNotice && <p className="auth-error" role="status">{favoriteNotice}</p>}
+            {enrichedBooks.filter((book) => favorites.includes(book.id)).length ? (
+              <div className="favorites-list">
+                {enrichedBooks.filter((book) => favorites.includes(book.id)).map((book) => (
+                  <article className="favorite-row" key={book.id}>
+                    <button className="favorite-row-cover" type="button" onClick={() => { setFavoritesOpen(false); openBook(book); }}><BookCover book={book} /></button>
+                    <div className="favorite-row-info">
+                      <span className="book-category">{book.category}</span>
+                      <strong>{book.title}</strong>
+                      <span>{book.author}</span>
+                      <b>{formatPrice(book.price)}</b>
+                      <div className="favorite-row-actions">
+                        <button type="button" onClick={() => addToCart(book)}>В корзину</button>
+                        <button type="button" onClick={() => toggleFavorite(book)}>Убрать ♥</button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state favorites-empty"><span>♡</span><h3>Пока нет избранных книг</h3><p>Нажмите на сердечко у понравившейся книги — она появится здесь.</p><button className="button-primary" type="button" onClick={() => { setFavoritesOpen(false); document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth" }); }}>Перейти в каталог</button></div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {authOpen && (
+        <div className="modal-backdrop" onClick={() => setAuthOpen(false)}>
+          <section className="account-modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={(event) => event.stopPropagation()}>
+            <button className="modal-close" type="button" onClick={() => setAuthOpen(false)} aria-label="Закрыть">×</button>
+            <p className="eyebrow">BOOKSTORE · ЛИЧНЫЙ КАБИНЕТ</p>
+            <h2 id="auth-title">{authMode === "signin" ? "С возвращением" : "Создать аккаунт"}</h2>
+            <p className="account-intro">{authMode === "signin" ? "Войдите, чтобы сохранить любимые книги и покупки." : "Зарегистрируйтесь, чтобы собирать свою книжную коллекцию."}</p>
+            {!authConfigured && <p className="auth-error">Сервис аккаунтов пока не настроен. Добавьте параметры Supabase в Vercel и повторите попытку.</p>}
+            {authError && <p className="auth-error" role="alert">{authError}</p>}
+            {authMessage && <p className="auth-success" role="status">{authMessage}</p>}
+            <form className="auth-form" onSubmit={submitAuth}>
+              <label>Email<input type="email" autoComplete="email" required value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" /></label>
+              <label>Пароль<input type="password" autoComplete={authMode === "signin" ? "current-password" : "new-password"} minLength={6} maxLength={128} required value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} placeholder="Не менее 6 символов" /></label>
+              <button className="button-primary auth-submit" type="submit" disabled={authLoading || !authConfigured}>{authLoading ? "Подождите..." : authMode === "signin" ? "Войти" : "Зарегистрироваться"}</button>
+            </form>
+            <p className="auth-switch">{authMode === "signin" ? "Ещё нет аккаунта?" : "Уже есть аккаунт?"} <button type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthError(""); setAuthMessage(""); }}>{authMode === "signin" ? "Регистрация" : "Войти"}</button></p>
+          </section>
+        </div>
+      )}
 
       {selectedBook && (
         <div className="modal-backdrop" onClick={() => setSelectedBook(null)}>
