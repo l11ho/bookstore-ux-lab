@@ -91,3 +91,25 @@ export async function getSession() {
 export function publicUser(user) {
   return user ? { id: user.id, email: user.email || "" } : null;
 }
+
+
+// Check the role through a SECURITY DEFINER function. Never trust a client-supplied role.
+export async function isBookstoreAdmin(config, token) {
+  if (!config || !token) return false;
+  try {
+    const response = await fetch(config.url + "/rest/v1/rpc/is_bookstore_admin", {
+      method: "POST",
+      cache: "no-store",
+      headers: {
+        apikey: config.key,
+        Authorization: "Bearer " + token,
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    if (!response.ok) return false;
+    return (await response.json()) === true;
+  } catch {
+    return false;
+  }
+}
