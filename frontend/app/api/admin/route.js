@@ -45,7 +45,7 @@ export async function GET() {
     const response = await callAdminRpc(authorization.session, "admin_get_overview");
     const data = await response.json().catch(() => null);
     if (!response.ok || !data || typeof data !== "object") {
-      return reply({ error: "Не удалось загрузить панель. Проверьте SQL-миграцию Admin в Supabase." }, 503);
+      return reply({ error: "Не удалось загрузить панель. Выполните миграцию 202611140001 в Supabase SQL Editor." }, 503);
     }
     return reply(data);
   } catch {
@@ -69,17 +69,66 @@ export async function PATCH(request) {
   try {
     const authorization = await getAuthorizedAdmin();
     if (authorization.response) return authorization.response;
-
     const response = await callAdminRpc(authorization.session, "admin_update_order_status", {
       p_order_id: orderId,
       p_order_status: status,
     });
     const data = await response.json().catch(() => null);
-    if (!response.ok) {
-      return reply({ error: "Не удалось обновить статус заказа. Проверьте права администратора." }, 503);
-    }
+    if (!response.ok) return reply({ error: "Не удалось обновить статус заказа." }, 503);
     return reply({ success: true, order: data });
   } catch {
     return reply({ error: "Не удалось обновить заказ." }, 503);
+  }
+}
+
+export async function POST(request) {
+  if (!isSameOriginRequest(request)) return reply({ error: "Недопустимый источник запроса." }, 403);
+  const input = await request.json().catch(() => null);
+  const book = input?.book;
+  if (!book || typeof book !== "object" || Array.isArray(book)) {
+    return reply({ error: "Некорректные данные книги." }, 400);
+  }
+  const priceCents = Number(book.priceCents);
+  const stock = Number(book.stock);
+  if (
+    typeof book.title !== "string" || book.title.trim().length < 2 ||
+    typeof book.author !== "string" || book.author.trim().length < 2 ||
+    typeof book.category !== "string" || book.category.trim().length < 2 ||
+    !Number.isInteger(priceCents) || priceCents < 1 || priceCents > 100000000 ||
+    !Number.isInteger(stock) || stock < 0 || stock > 1000000
+  ) {
+    return reply({ error: "Проверьте название, автора, категорию, цену и остаток." }, 400);
+  }
+  if (book.coverUrl && !/^https?:\/\//i.test(String(book.coverUrl))) {
+    return reply({ error: "Ссылка на обложку должна начинаться с https:// или http://." }, 400);
+  }
+
+  try {
+    const authorization = await getAuthorizedAdmin();
+    if (authorization.response) return authorization.response;
+    const response = await callAdminRpc(authorization.session, "admin_save_book", { p_book: book });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !data) return reply({ error: "Не удалось сохранить книгу. Проверьте миграцию и данные." }, 503);
+    return reply({ success: true, book: data });
+  } catch {
+    return reply({ error: "Не удалось сохранить книгу." }, 503);
+  }
+}
+
+export async function DELETE(request) {
+  if (!isSameOriginRequest(request)) return reply({ error: "Недопустимый источник запроса." }, 403);
+  const input = await request.json().catch(() => null);
+  const bookId = Number(input?.bookId);
+  if (!Number.isInteger(bookId) || bookId < 1) return reply({ error: "Некорректный ID книги." }, 400);
+
+  try {
+    const authorization = await getAuthorizedAdmin();
+    if (authorization.response) return authorization.response;
+    const response = await callAdminRpc(authorization.session, "admin_delete_book", { p_book_id: bookId });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) return reply({ error: "Не удалось удалить книгу." }, 503);
+    return reply({ success: true, result: data });
+  } catch {
+    return reply({ error: "Не удалось удалить книгу." }, 503);
   }
 }
