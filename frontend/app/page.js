@@ -427,13 +427,15 @@ export default function Home() {
         body: JSON.stringify({
           action: authMode,
           email: authEmail,
-          password: authPassword,
+          password: authMode === "forgot" ? undefined : authPassword,
         }),
       });
       const data = await result.json().catch(() => ({}));
       if (!result.ok) throw new Error(data.error || "Не удалось выполнить запрос.");
 
-      if (data.user) {
+      if (authMode === "forgot") {
+        setAuthMessage(data.message || "Если аккаунт с таким email существует, мы отправили ссылку для сброса пароля.");
+      } else if (data.user) {
         setAccount(data.user);
         setIsAdmin(Boolean(data.isAdmin));
         setAuthOpen(false);
@@ -891,17 +893,40 @@ export default function Home() {
           <section className="account-modal auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={(event) => event.stopPropagation()}>
             <button className="modal-close" type="button" onClick={() => setAuthOpen(false)} aria-label="Закрыть">×</button>
             <p className="eyebrow">BOOKSTORE · ЛИЧНЫЙ КАБИНЕТ</p>
-            <h2 id="auth-title">{authMode === "signin" ? "С возвращением" : "Создать аккаунт"}</h2>
-            <p className="account-intro">{authMode === "signin" ? "Войдите, чтобы сохранить любимые книги и покупки." : "Зарегистрируйтесь, чтобы собирать свою книжную коллекцию."}</p>
+            <h2 id="auth-title">
+              {authMode === "signin" ? "С возвращением" : authMode === "signup" ? "Создать аккаунт" : "Восстановить пароль"}
+            </h2>
+            <p className="account-intro">
+              {authMode === "signin"
+                ? "Войдите, чтобы сохранить любимые книги и покупки."
+                : authMode === "signup"
+                  ? "Зарегистрируйтесь, чтобы собирать свою книжную коллекцию."
+                  : "Укажите email аккаунта. Мы отправим ссылку для создания нового пароля."}
+            </p>
             {!authConfigured && <p className="auth-error">Сервис аккаунтов пока не настроен. Добавьте параметры Supabase в Vercel и повторите попытку.</p>}
             {authError && <p className="auth-error" role="alert">{authError}</p>}
             {authMessage && <p className="auth-success" role="status">{authMessage}</p>}
             <form className="auth-form" onSubmit={submitAuth}>
               <label>Email<input type="email" autoComplete="email" required value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="you@example.com" /></label>
-              <label>Пароль<input type="password" autoComplete={authMode === "signin" ? "current-password" : "new-password"} minLength={6} maxLength={128} required value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} placeholder="Не менее 6 символов" /></label>
-              <button className="button-primary auth-submit" type="submit" disabled={authLoading || !authConfigured}>{authLoading ? "Подождите..." : authMode === "signin" ? "Войти" : "Зарегистрироваться"}</button>
+              {authMode !== "forgot" && (
+                <label>Пароль<input type="password" autoComplete={authMode === "signin" ? "current-password" : "new-password"} minLength={6} maxLength={128} required value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} placeholder="Не менее 6 символов" /></label>
+              )}
+              <button className="button-primary auth-submit" type="submit" disabled={authLoading || !authConfigured}>
+                {authLoading ? "Подождите..." : authMode === "signin" ? "Войти" : authMode === "signup" ? "Зарегистрироваться" : "Отправить ссылку"}
+              </button>
             </form>
-            <p className="auth-switch">{authMode === "signin" ? "Ещё нет аккаунта?" : "Уже есть аккаунт?"} <button type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthError(""); setAuthMessage(""); }}>{authMode === "signin" ? "Регистрация" : "Войти"}</button></p>
+            {authMode === "signin" && (
+              <p className="auth-forgot">
+                <button type="button" onClick={() => { setAuthMode("forgot"); setAuthPassword(""); setAuthError(""); setAuthMessage(""); }}>
+                  Забыли пароль?
+                </button>
+              </p>
+            )}
+            <p className="auth-switch">
+              {authMode === "forgot"
+                ? <>Вспомнили пароль? <button type="button" onClick={() => { setAuthMode("signin"); setAuthError(""); setAuthMessage(""); }}>Войти</button></>
+                : <>{authMode === "signin" ? "Ещё нет аккаунта?" : "Уже есть аккаунт?"} <button type="button" onClick={() => { setAuthMode(authMode === "signin" ? "signup" : "signin"); setAuthError(""); setAuthMessage(""); }}>{authMode === "signin" ? "Регистрация" : "Войти"}</button></>}
+            </p>
           </section>
         </div>
       )}
