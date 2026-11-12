@@ -36,7 +36,7 @@
 }
 .heading h2 {
   margin: 0;
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: clamp(32px, 5vw, 47px);
   line-height: 1.15;
   font-weight: 500;
@@ -78,7 +78,7 @@
 .state h3 {
   margin: 0;
   color: #1d3033;
-  font-family: Georgia, serif;
+  font-family: var(--serif);
   font-size: 24px;
   font-weight: 500;
 }
@@ -147,7 +147,7 @@
 .orderBottom > div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .paid { color: #36754e; font-size: 11px; font-weight: 700; }
 .method { color: #8a908c; font-size: 10px; }
-.total { font-family: Georgia, serif; font-size: 22px; white-space: nowrap; }
+.total { font-family: var(--serif); font-size: 22px; white-space: nowrap; }
 .details { border-top: 1px solid #e7e2d9; padding-top: 14px; }
 .details summary { color: #aa5b3e; font-size: 11px; font-weight: 700; cursor: pointer; }
 .details dl { display: grid; gap: 10px; margin: 16px 0 10px; }
