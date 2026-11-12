@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession, isSameOriginRequest } from "../../lib/supabaseServer";
 
-export const dynamic = "force-dynamic";
 
 function reply(data, status = 200) {
   return NextResponse.json(data, {
