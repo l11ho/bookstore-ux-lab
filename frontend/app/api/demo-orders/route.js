@@ -106,3 +106,45 @@ export async function POST(request) {
     return reply({ error: "The demo checkout service is temporarily unavailable. Please try again." }, 503);
   }
 }
+
+
+// Account order history: only the authenticated user's orders are returned.
+// RLS in Supabase is an additional independent ownership check.
+export async function GET() {
+  try {
+    const session = await getSession();
+    if (!session.configured || !session.config) {
+      return reply({ error: "Supabase is not configured." }, 503);
+    }
+    if (!session.user || !session.token) {
+      return reply({ error: "Войдите, чтобы увидеть ваши заказы." }, 401);
+    }
+
+    const query = new URLSearchParams({
+      select: "id,order_number,created_at,currency,subtotal_cents,shipping_cents,total_cents,payment_method,payment_status,order_status,shipping_address,items",
+      user_id: "eq." + session.user.id,
+      order: "created_at.desc",
+      limit: "50",
+    });
+    const upstream = await fetch(session.config.url + "/rest/v1/bookstore_orders?" + query.toString(), {
+      cache: "no-store",
+      method: "GET",
+      headers: {
+        apikey: session.config.key,
+        Authorization: "Bearer " + session.token,
+        Accept: "application/json",
+      },
+    });
+    if (!upstream.ok) {
+      return reply({ error: "Не удалось получить историю заказов. Проверьте таблицу bookstore_orders и RLS." }, 503);
+    }
+    const data = await upstream.json().catch(() => null);
+    if (!Array.isArray(data)) {
+      return reply({ error: "Получен неправильный формат истории заказов." }, 503);
+    }
+
+    return reply({ orders: data });
+  } catch {
+    return reply({ error: "Сервис заказов временно недоступен." }, 503);
+  }
+}
