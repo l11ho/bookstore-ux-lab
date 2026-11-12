@@ -49,6 +49,56 @@ export async function POST(request) {
     return reply({ success: true, user: null });
   }
 
+  if (action === "recover") {
+    const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      return reply({ error: "Введите корректный email." }, 400);
+    }
+
+    try {
+      const redirectTo = new URL("/reset-password", request.url).toString();
+      const result = await authRequest(config, `recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      if (!result.response.ok) {
+        const message = result.data.msg || result.data.message || result.data.error_description ||
+          "Не удалось отправить письмо. Попробуйте позже.";
+        return reply({ error: String(message) }, result.response.status === 429 ? 429 : 400);
+      }
+      return reply({
+        success: true,
+        message: "Если аккаунт с таким email существует, мы отправили ссылку для сброса пароля.",
+      });
+    } catch {
+      return reply({ error: "Сервис восстановления пароля временно недоступен." }, 503);
+    }
+  }
+
+  if (action === "update_password") {
+    const accessToken = typeof input.accessToken === "string" ? input.accessToken : "";
+    const password = typeof input.password === "string" ? input.password : "";
+    if (!accessToken || password.length < 8 || password.length > 128) {
+      return reply({ error: "Пароль должен содержать не менее 8 символов." }, 400);
+    }
+
+    try {
+      const result = await authRequest(config, "user", {
+        method: "PUT",
+        token: accessToken,
+        body: JSON.stringify({ password }),
+      });
+      if (!result.response.ok) {
+        const message = result.data.msg || result.data.message || result.data.error_description ||
+          "Ссылка недействительна или срок её действия истёк. Запросите новую.";
+        return reply({ error: String(message) }, result.response.status === 500 ? 503 : 400);
+      }
+      return reply({ success: true });
+    } catch {
+      return reply({ error: "Не удалось обновить пароль. Попробуйте ещё раз." }, 503);
+    }
+  }
+
   if (!["signin", "signup"].includes(action)) return reply({ error: "Неизвестное действие." }, 400);
   const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
   const password = typeof input.password === "string" ? input.password : "";
