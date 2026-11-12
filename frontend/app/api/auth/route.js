@@ -41,7 +41,9 @@ export async function POST(request) {
     try {
       const session = await getSession();
       if (session.token) await authRequest(config, "logout", { method: "POST", token: session.token });
-    } catch {}
+    } catch {
+      // Always clear local cookies even if remote token revocation fails.
+    }
     clearSessionCookies(await cookies());
     return reply({ success: true, user: null });
   }
