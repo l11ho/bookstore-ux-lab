@@ -113,3 +113,9 @@ $$;
 
 revoke all on function public.admin_update_order_status(uuid, text) from public, anon;
 grant execute on function public.admin_update_order_status(uuid, text) to authenticated;
+
+
+-- Initial administrator account supplied by the project owner.
+insert into public.bookstore_admins (user_id)
+values ('e468cb7a-3de9-4576-8dd8-399cf8ee6fa3'::uuid)
+on conflict (user_id) do nothing;
