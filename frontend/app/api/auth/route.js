@@ -51,7 +51,7 @@ export async function POST(request) {
 
   if (action === "recover") {
     const email = typeof input.email === "string" ? input.email.trim().toLowerCase() : "";
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return reply({ error: "Введите корректный email." }, 400);
     }
 
