@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 
 const GA_ID = "G-8GVG47MQ1E";
-const CS_ID = "6ad4fa79a47b5";
+const CS_ID = "f789cb1c22747";
 const STORAGE_KEY = "bookstore_tracking_consent_v2";
 
 export default function AnalyticsConsent() {
